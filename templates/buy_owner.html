@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buy Properties - Owner Details Extraction</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 50px;
+        }
+
+        .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 12px;
+        }
+
+        .progress-indicator {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #198754;
+        }
+
+        .status-box {
+            background-color: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #198754;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .instruction-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ffeeba;
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .ip-btn {
+            background: linear-gradient(135deg, #fd7e14, #dc3545);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .ip-btn:hover {
+            opacity: 0.85;
+            color: white;
+        }
+
+        .ip-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #ipStatus {
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-9">
+                <h2 class="text-center mb-4 text-success"><i class="bi bi-house-door"></i> Buy Properties Extractor</h2>
+
+                <!-- Setup Form -->
+                <div class="card p-4 mb-4" id="setupCard">
+                    <h5 class="card-title">1. Connect & Load Properties</h5>
+                    <p class="text-muted">Loads your Excel sheet so you can navigate rows exactly as you wish. Before
+                        continuing, `<strong class="text-danger">start_chrome.bat</strong>` must be running.</p>
+                    <div class="mb-3">
+                        <label for="excelInput" class="form-label">Excel File Name</label>
+                        <input type="text" class="form-control" id="excelInput"
+                            value="All_Buy_Properties_Thane_Formatted.xlsx">
+                    </div>
+                    <button class="btn btn-success" onclick="loadExcel()" id="startBtn">Load File & Connect to
+                        Chrome</button>
+                </div>
+
+                <!-- Monitoring Dashboard -->
+                <div class="card p-4 d-none" id="monitorCard">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Extraction Dashboard</h5>
+                        <span class="progress-indicator" id="progressText">Row 0 of 0</span>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="d-flex justify-content-between mb-4 align-items-center bg-light p-3 border rounded">
+                        <button class="btn btn-secondary" onclick="navigateRow(-1)" id="prevBtn">&laquo; Previous
+                            Property</button>
+                        <!-- Jump Input -->
+                        <div class="input-group" style="width: 250px;">
+                            <span class="input-group-text bg-white border-end-0">Jump Row</span>
+                            <input type="number" class="form-control text-center border-start-0 border-end-0"
+                                id="directNavInput" min="1" placeholder="Ex: 5">
+                            <button class="btn btn-outline-success" onclick="navigateRow('direct')">Go</button>
+                        </div>
+                        <button class="btn btn-success" onclick="navigateRow(1)" id="nextBtn">Next Property
+                            &raquo;</button>
+                    </div>
+
+                    <div class="mb-3 border p-2 rounded bg-white">
+                        <strong class="text-secondary">Current URL:</strong><br>
+                        <a href="#" target="_blank" id="currentUrl"
+                            class="text-break text-decoration-none d-block mt-1">Waiting...</a>
+                    </div>
+
+                    <div class="status-box mb-4" id="statusBox">Connecting to Chrome...</div>
+
+                    <!-- Database Live Status -->
+                    <div class="card mb-4 border border-success shadow-none">
+                        <div class="card-header bg-success text-white py-2 fw-bold">Live Extracted Data</div>
+                        <div class="card-body py-2 px-3">
+                            <div class="row">
+                                <div class="col-6 mb-1"><strong>Phone:</strong> <span id="dbPhone"
+                                        class="badge bg-secondary">-</span></div>
+                                <div class="col-6 mb-1"><strong>Owner Name:</strong> <span id="dbName"
+                                        class="badge bg-secondary">-</span></div>
+                                <div class="col-6 mb-1"><strong>Price:</strong> <span id="dbPrice"
+                                        class="text-muted">-</span></div>
+                                <div class="col-6 mb-1"><strong>Config:</strong> <span id="dbConfig"
+                                        class="text-muted">-</span></div>
+                                <div class="col-6 mb-1"><strong>Position:</strong> <span id="dbPosition"
+                                        class="text-muted">-</span></div>
+                                <div class="col-6 mb-1"><strong>Possession:</strong> <span id="dbPossession"
+                                        class="text-muted">-</span></div>
+                                <div class="col-12 mb-1"><strong>Address:</strong> <span id="dbAddress"
+                                        class="text-muted">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2-Step Extraction Buttons -->
+                    <div class="row gx-3">
+                        <div class="col-md-6 d-grid mb-3">
+                            <button
+                                class="btn btn-outline-dark control-btn d-flex flex-column align-items-center justify-content-center"
+                                id="extractDetailsBtn" onclick="extractDetails()">
+                                <span><i class="bi bi-card-text fs-4 mb-1"></i></span>
+                                1. Scrap Details
+                                <small class="fw-normal mt-1">(Config, Price, Area, Status - No OTP)</small>
+                            </button>
+                        </div>
+                        <div class="col-md-6 d-grid mb-3">
+                            <button
+                                class="btn btn-success control-btn shadow-sm d-flex flex-column align-items-center justify-content-center"
+                                id="extractNumberBtn" onclick="extractNumber()">
+                                <span><i class="bi bi-telephone fs-4 mb-1"></i></span>
+                                2. Scrap Owner Number
+                                <small class="fw-normal mt-1">(Only Click AFTER entering OTP!)</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- IP Change Section -->
+                    <div class="d-flex align-items-center gap-3 p-3 mt-1 rounded"
+                        style="background:#fff8f0;border:1.5px solid #fd7e14;">
+                        <button class="ip-btn btn flex-shrink-0" id="changeIpBtn" onclick="changeIp()">
+                            <i class="bi bi-arrow-repeat me-1"></i> Change IP
+                        </button>
+                        <div>
+                            <div class="fw-bold text-warning-emphasis" style="font-size:0.9rem;"><i
+                                    class="bi bi-wifi"></i> IP Rotation</div>
+                            <div id="ipStatus" class="text-muted">Click to disconnect &amp; reconnect WiFi adapter
+                                (changes public IP)</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pollInterval = null;
+        let currentIndex = -1;
+        let totalRows = 0;
+
+        function loadExcel() {
+            const fileInput = document.getElementById('excelInput').value;
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            startBtn.innerText = "Loading & Connecting...";
+
+            fetch('/api/load', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_path: fileInput })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        totalRows = data.total;
+                        document.getElementById('setupCard').classList.add('d-none');
+                        document.getElementById('monitorCard').classList.remove('d-none');
+                        pollInterval = setInterval(pollStatus, 1000);
+
+                        // Navigate to the first row by default
+                        navigateAbsolute(0);
+                    } else {
+                        alert("Error: " + data.error);
+                        startBtn.disabled = false;
+                        startBtn.innerText = "Load File & Connect to Chrome";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Failed to reach server.");
+                    startBtn.disabled = false;
+                    startBtn.innerText = "Load File & Connect to Chrome";
+                });
+        }
+
+        function navigateRow(direction) {
+            if (direction === 'direct') {
+                const val = parseInt(document.getElementById('directNavInput').value);
+                if (val > 0 && val <= totalRows) {
+                    navigateAbsolute(val - 1);
+                } else {
+                    alert("Invalid row. Max total rows: " + totalRows);
+                }
+                return;
+            }
+
+            let newIndex = currentIndex + direction;
+            if (newIndex >= 0 && newIndex < totalRows) {
+                navigateAbsolute(newIndex);
+            }
+        }
+
+        function navigateAbsolute(idx) {
+            document.getElementById('prevBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('extractDetailsBtn').disabled = true;
+            document.getElementById('extractNumberBtn').disabled = true;
+
+            document.getElementById('statusBox').innerText = "Navigating Chrome to Property...";
+
+            fetch('/api/navigate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index: idx })
+            });
+        }
+
+        function extractDetails() {
+            document.getElementById('extractDetailsBtn').disabled = true;
+            document.getElementById('statusBox').innerText = "Extracting Property Details...";
+
+            fetch('/api/extract/details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index: currentIndex })
+            });
+        }
+
+        function extractNumber() {
+            document.getElementById('extractNumberBtn').disabled = true;
+            document.getElementById('statusBox').innerText = "Extracting Phone Number...";
+
+            fetch('/api/extract/number', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index: currentIndex })
+            });
+        }
+
+        function changeIp() {
+            const btn = document.getElementById('changeIpBtn');
+            const statusEl = document.getElementById('ipStatus');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Changing IP...';
+            statusEl.innerText = 'Disconnecting WiFi adapter...';
+
+            fetch('/api/change_ip', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        statusEl.innerHTML = '<span class="text-success fw-bold">&#10003; IP Changed! New IP: ' + (data.new_ip || 'check manually') + '</span>';
+                    } else {
+                        statusEl.innerHTML = '<span class="text-danger">&#10007; Failed: ' + data.error + '</span>';
+                    }
+                })
+                .catch(err => {
+                    statusEl.innerHTML = '<span class="text-danger">&#10007; Server error: ' + err + '</span>';
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Change IP';
+                });
+        }
+
+        function pollStatus() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    // Update Text
+                    document.getElementById('statusBox').innerText = data.status;
+
+                    // Update Sync Info
+                    currentIndex = data.current_index;
+                    document.getElementById('progressText').innerText = `Row ${currentIndex + 1} of ${data.total}`;
+
+                    const jumpInput = document.getElementById('directNavInput');
+                    if (document.activeElement !== jumpInput) {
+                        jumpInput.value = currentIndex + 1;
+                    }
+
+                    // DB fields status
+                    if (data.current_row_data) {
+                        const phoneField = document.getElementById('dbPhone');
+                        const nameField = document.getElementById('dbName');
+
+                        phoneField.innerText = data.current_row_data['Phone Number'];
+                        nameField.innerText = data.current_row_data['Owner Name'];
+                        document.getElementById('dbPrice').innerText = data.current_row_data['Price'];
+                        document.getElementById('dbConfig').innerText = data.current_row_data['Configuration'];
+                        document.getElementById('dbAddress').innerText = data.current_row_data['Address'];
+                        document.getElementById('dbPosition').innerText = data.current_row_data['Position'];
+                        document.getElementById('dbPossession').innerText = data.current_row_data['Possession'];
+
+                        // Add colors for clarity
+                        if (phoneField.innerText.startsWith('+9') || phoneField.innerText.length >= 10 && !isNaN(phoneField.innerText.charAt(0))) {
+                            phoneField.className = "badge bg-success";
+                        } else if (phoneField.innerText === "Not Found" || phoneField.innerText === "N/A" || phoneField.innerText.includes("Limit")) {
+                            phoneField.className = "badge bg-warning text-dark";
+                        } else {
+                            phoneField.className = "badge bg-secondary";
+                        }
+
+                        if (nameField.innerText !== "Name not found" && nameField.innerText !== "N/A") {
+                            nameField.className = "badge bg-primary";
+                        } else {
+                            nameField.className = "badge bg-secondary";
+                        }
+                    }
+
+                    // URL update
+                    const urlEl = document.getElementById('currentUrl');
+                    if (data.current_url && data.current_url !== "") {
+                        urlEl.innerText = data.current_url;
+                        urlEl.href = data.current_url;
+                    } else {
+                        urlEl.innerText = "No URL available for this row.";
+                        urlEl.removeAttribute('href');
+                    }
+
+                    // Simple logic for active buttons based on data
+                    const isProcessing = data.status.toLowerCase().includes('navigating') || data.status.toLowerCase().includes('extracting');
+
+                    document.getElementById('prevBtn').disabled = isProcessing || currentIndex <= 0;
+                    document.getElementById('nextBtn').disabled = isProcessing || currentIndex >= (data.total - 1);
+                    document.getElementById('extractDetailsBtn').disabled = isProcessing || currentIndex < 0;
+                    document.getElementById('extractNumberBtn').disabled = isProcessing || currentIndex < 0;
+                })
+                .catch(err => console.error(err));
+        }
+    </script>
+</body>
+
+</html>

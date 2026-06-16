@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>99acres Automation Scraper</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .container { 
+            background: #fff; 
+            padding: 40px 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 450px; 
+            text-align: center; 
+            box-sizing: border-box;
+        }
+        h1 { 
+            font-size: 28px; 
+            margin-bottom: 5px; 
+            color: #1a1a1a; 
+        }
+        p.subtitle {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        input[type="text"] { 
+            width: 100%; 
+            padding: 14px; 
+            margin-bottom: 20px; 
+            border: 2px solid #e1e1e1; 
+            border-radius: 6px; 
+            font-size: 16px; 
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #0056b3;
+        }
+        button { 
+            background-color: #0056b3; 
+            color: white; 
+            border: none; 
+            padding: 14px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600;
+            width: 100%; 
+            transition: background-color 0.3s;
+        }
+        button:hover { 
+            background-color: #004494; 
+        }
+        button:disabled {
+            background-color: #99c2ff;
+            cursor: not-allowed;
+        }
+        .flash { 
+            color: #d9534f; 
+            background-color: #fdf7f7;
+            border: 1px solid #d9534f;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px; 
+            font-size: 14px;
+        }
+        #loading { 
+            display: none; 
+            margin-top: 20px; 
+            color: #555; 
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #0056b3;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Property Scraper</h1>
+        <p class="subtitle">Enter any location on 99acres to download owner properties</p>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="flash">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        <form method="POST" onsubmit="showLoading()">
+            <input type="text" name="location" placeholder="e.g. Thane West, Bandra..." required>
+            <button type="submit" id="submitBtn">Scrap & Download Data</button>
+        </form>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <strong>Scraping in progress...</strong><br>
+            Please wait. It may take roughly 1 minute.
+            DO NOT close this window.
+        </div>
+    </div>
+    
+    <script>
+        function showLoading() {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerText = 'Processing...';
+            document.getElementById('loading').style.display = 'block';
+            
+            // Re-enable form styling if an error flashes after page reload
+            // (Download will keep page as is, so button stays disabled until reload)
+            setTimeout(() => {
+                document.getElementById('submitBtn').innerText = 'Still working...';
+            }, 10000);
+        }
+    </script>
+</body>
+</html>

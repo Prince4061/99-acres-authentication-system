@@ -1,0 +1,24 @@
+# Virtual Environment
+venv/
+venv_backup/
+
+# PyInstaller / Compilation outputs
+build/
+dist/
+*.exe
+*.rar
+
+# Chrome profiles and debug logs
+chrome_debug_profile/
+chrome_user_data/
+debug.log
+output.txt
+temp_html.txt
+temp_html_buy.txt
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Local configuration files (optional but recommended to keep clean)
+sheet_url.txt
